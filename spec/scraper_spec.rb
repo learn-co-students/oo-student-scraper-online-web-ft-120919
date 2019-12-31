@@ -1,50 +1,52 @@
-require "spec_helper"
+require 'open-uri'
+require 'pry'	
 
-describe "Scraper" do
+class Scraper
+class Scraper	
 
-  let!(:student_index_array) {[{:name=>"Joe Burgess", :location=>"New York, NY", :profile_url=>"students/joe-burgess.html"},
-                               {:name=>"Mathieu Balez", :location=>"New York, NY", :profile_url=>"students/mathieu-balez.html"},
-                               {:name=>"Diane Vu", :location=>"New York, NY", :profile_url=>"students/diane-vu.html"}]}
+  def self.scrape_index_page(index_url)
+  def self.scrape_index_page(index_url)	    index_page = Nokogiri::HTML(open(index_url))
 
-  let!(:student_joe_hash) {{:twitter=>"https://twitter.com/jmburges",
-                            :linkedin=>"https://www.linkedin.com/in/jmburges",
-                            :github=>"https://github.com/jmburges",
-                            :blog=>"http://joemburgess.com/",
-                            :profile_quote=>"\"Reduce to a previously solved problem\"",
-                            :bio=>
-  "I grew up outside of the Washington DC (NoVA!) and went to college at Carnegie Mellon University in Pittsburgh. After college, I worked as an Oracle consultant for IBM for a bit and now I teach here at The Flatiron School."}}
+    students = []
+  end	    index_page.css("div.roster-cards-container").each do |card|
 
-  let!(:student_david_hash) {{:linkedin=>"https://www.linkedin.com/in/david-kim-38221690",
- :github=>"https://github.com/davdkm",
- :profile_quote=>
-  "\"Yeah, well, you know, that's just, like, your opinion, man.\" - The Dude",
- :bio=>
-  "I'm a southern California native seeking to find work as a full stack web developer. I enjoying tinkering with computers and learning new things!"}}
+      card.css(".student-card a").each do |student|
+  def self.scrape_profile_page(profile_url)	        student_profile_link = "#{student.attr('href')}"
 
-  describe "#scrape_index_page" do
-    it "is a class method that scrapes the student index page ('./fixtures/student-site/index.html') and a returns an array of hashes in which each hash represents one student" do
-      index_url = "https://learn-co-curriculum.github.io/student-scraper-test-page/index.html"
-      scraped_students = Scraper.scrape_index_page(index_url)
-      expect(scraped_students).to be_a(Array)
-      expect(scraped_students.first).to have_key(:location)
-      expect(scraped_students.first).to have_key(:name)
-      expect(scraped_students).to include(student_index_array[0], student_index_array[1], student_index_array[2])
+        student_location = student.css('.student-location').text
+  end	        student_name = student.css('.student-name').text
+
+        students << {name: student_name, location: student_location, profile_url: student_profile_link}
+end	      end
+
     end
+    students
   end
 
-  describe "#scrape_profile_page" do
-    it "is a class method that scrapes a student's profile page and returns a hash of attributes describing an individual student" do
-      profile_url = "https://learn-co-curriculum.github.io/student-scraper-test-page/students/joe-burgess.html"
-      scraped_student = Scraper.scrape_profile_page(profile_url)
-      expect(scraped_student).to be_a(Hash)
-      expect(scraped_student).to match(student_joe_hash)
+  def self.scrape_profile_page(profile_slug)
+    student = {}
+    profile_page = Nokogiri::HTML(open(profile_slug))
+    links = profile_page.css(".social-icon-container").children.css("a").map { |el| el.attribute('href').value}
+    links.each do |link|
+      if link.include?("linkedin")
+        student[:linkedin] = link
+      elsif link.include?("github")
+        student[:github] = link
+      elsif link.include?("twitter")
+        student[:twitter] = link
+      else
+        student[:blog] = link
+      end
     end
+    # student[:twitter] = profile_page.css(".social-icon-container").children.css("a")[0].attribute("href").value
+    # # if profile_page.css(".social-icon-container").children.css("a")[0]
+    # student[:linkedin] = profile_page.css(".social-icon-container").children.css("a")[1].attribute("href").value if profile_page.css(".social-icon-container").children.css("a")[1]
+    # student[:github] = profile_page.css(".social-icon-container").children.css("a")[2].attribute("href").value if profile_page.css(".social-icon-container").children.css("a")[2]
+    # student[:blog] = profile_page.css(".social-icon-container").children.css("a")[3].attribute("href").value if profile_page.css(".social-icon-container").children.css("a")[3]
+    student[:profile_quote] = profile_page.css(".profile-quote").text if profile_page.css(".profile-quote")
+    student[:bio] = profile_page.css("div.bio-content.content-holder div.description-holder p").text if profile_page.css("div.bio-content.content-holder div.description-holder p")
 
-    it "can handle profile pages without all of the social links" do
-      profile_url = "https://learn-co-curriculum.github.io/student-scraper-test-page/students/david-kim.html"
-      scraped_student = Scraper.scrape_profile_page(profile_url)
-      expect(scraped_student).to be_a(Hash)
-      expect(scraped_student).to match(student_david_hash)
-    end
+    student
   end
-end
+
+end 
