@@ -1,5 +1,5 @@
 require "spec_helper"
-=begin
+
 describe "Student" do 
   let!(:student_index_array) {[{:name=>"Alex Patriquin", :location=>"New York, NY"},
  {:name=>"Bacon McRib", :location=>"Kansas City, MO"},
@@ -61,4 +61,3 @@ describe "Student" do
     end
   end
 end
-=end
